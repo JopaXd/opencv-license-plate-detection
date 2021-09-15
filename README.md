@@ -1,0 +1,1 @@
+This app detects and reads license plate, then stores them in a file.

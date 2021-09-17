@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 import darknet
 import pytesseract
+import json
 
 def parser():
 	parser = argparse.ArgumentParser(description="YOLO Object Detection")
@@ -196,9 +197,15 @@ def main():
 		batch_size=args.batch_size
 	)
 
+	lp_filename = "license_plates.json"
 	cap = cv2.VideoCapture(args.input)
 	if not os.path.isdir("./temp"):
 		os.mkdir("./temp")
+	if not os.path.exists(lp_filename):
+		with open(lp_filename, "w") as lic:
+			initial_dict = {"license_plates": []}
+			json.dump(initial_dict, lic)
+		lic.close()
 	while True:
 		ret, frame = cap.read()
 		cv2.imwrite("./temp/temp_img.png", frame)
@@ -210,10 +217,17 @@ def main():
 			ROI = image[ymin:ymax, xmin:xmax]
 			gray = cv2.cvtColor(ROI, cv2.COLOR_BGR2GRAY)
 			a_threshold = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 85, 11)
-			ocr_result = pytesseract.image_to_string(a_threshold)
-			if ocr_result.strip() != "":
-				cv2.imshow("Test", a_threshold)
+			ocr_result = pytesseract.image_to_string(a_threshold).strip()
+			if ocr_result != "":
 				print("OCR: " + ocr_result)
+				with open(lp_filename, "r") as lic:
+					license_data = json.load(lic)
+				lic.close()
+				if not ocr_result in license_data["license_plates"]:
+					license_data["license_plates"].append(ocr_result)
+					with open(lp_filename, "w") as lic:
+						json.dump(license_data, lic)
+					lic.close()
 		cv2.imshow("Frame", image)
 		if cv2.waitKey(1) & 0xFF == ord('q'):
 			os.remove("./temp/temp_img.png")

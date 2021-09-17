@@ -196,7 +196,6 @@ def main():
 		batch_size=args.batch_size
 	)
 
-	rectKernel = cv2.getStructuringElement(cv2.MORPH_RECT, (13, 5))
 	cap = cv2.VideoCapture(args.input)
 	if not os.path.isdir("./temp"):
 		os.mkdir("./temp")
@@ -210,9 +209,11 @@ def main():
 			(xmin,ymin,xmax,ymax) = darknet.bbox2points(bbox)
 			ROI = image[ymin:ymax, xmin:xmax]
 			gray = cv2.cvtColor(ROI, cv2.COLOR_BGR2GRAY)
-			tophat = cv2.morphologyEx(gray, cv2.MORPH_TOPHAT, rectKernel)
-			ocr_result = pytesseract.image_to_string(tophat)
-			print("OCR: " + ocr_result)
+			a_threshold = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 85, 11)
+			ocr_result = pytesseract.image_to_string(a_threshold)
+			if ocr_result.strip() != "":
+				cv2.imshow("Test", a_threshold)
+				print("OCR: " + ocr_result)
 		cv2.imshow("Frame", image)
 		if cv2.waitKey(1) & 0xFF == ord('q'):
 			os.remove("./temp/temp_img.png")

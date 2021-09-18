@@ -8,6 +8,7 @@ import numpy as np
 import darknet
 import pytesseract
 import json
+import atexit
 
 def parser():
 	parser = argparse.ArgumentParser(description="YOLO Object Detection")
@@ -217,8 +218,7 @@ def main():
 			ROI = image[ymin:ymax, xmin:xmax]
 			gray = cv2.cvtColor(ROI, cv2.COLOR_BGR2GRAY)
 			a_threshold = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 85, 11)
-			ocr_result = pytesseract.image_to_string(a_threshold).strip()
-			if ocr_result != "":
+			if (ocr_result := pytesseract.image_to_string(a_threshold).strip()) != "":
 				print("OCR: " + ocr_result)
 				with open(lp_filename, "r") as lic:
 					license_data = json.load(lic)
@@ -230,8 +230,12 @@ def main():
 					lic.close()
 		cv2.imshow("Frame", image)
 		if cv2.waitKey(1) & 0xFF == ord('q'):
-			os.remove("./temp/temp_img.png")
 			break
+
+@atexit.register
+def on_exit():
+	os.remove("./temp/temp_img.png")
+	cv2.destroyAllWindows()
 
 if __name__ == "__main__":
 	main()

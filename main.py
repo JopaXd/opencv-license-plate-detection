@@ -213,10 +213,17 @@ def main():
 		image, detections = image_detection("./temp/temp_img.png", network, class_names, class_colors, args.thresh)
 		darknet.print_detections(detections, args.ext_output)
 		for d in detections:
-			bbox = (int(i) for i in d[2])
+			bbox = d[2]
 			(xmin,ymin,xmax,ymax) = darknet.bbox2points(bbox)
 			ROI = image[ymin:ymax, xmin:xmax]
-			gray = cv2.cvtColor(ROI, cv2.COLOR_BGR2GRAY)
+			try:
+				gray = cv2.cvtColor(ROI, cv2.COLOR_BGR2GRAY)
+			except cv2.error:
+				#Without the try/except, sometimes i get
+				#error: (-215:Assertion failed) !_src.empty() in function 'cvtColor'
+				#Adding this makes sure the script does not crash.
+				#Works very well.
+				continue
 			a_threshold = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 85, 11)
 			if (ocr_result := pytesseract.image_to_string(a_threshold).strip()) != "":
 				print("OCR: " + ocr_result)

@@ -41,7 +41,7 @@ def check_arguments_errors(args):
 	if not os.path.exists(args.data_file):
 		raise(ValueError("Invalid data file path {}".format(os.path.abspath(args.data_file))))
 	if args.input and not os.path.exists(args.input):
-		raise(ValueError("Invalid image path {}".format(os.path.abspath(args.input))))
+		raise(ValueError("Invalid video path {}".format(os.path.abspath(args.input))))
 
 
 def check_batch_shape(images, batch_size):
@@ -207,7 +207,10 @@ def main():
 	ct = CentroidTracker()
 
 	lp_filename = "license_plates.json"
-	cap = cv2.VideoCapture(args.input)
+	if args.input:
+		cap = cv2.VideoCapture(args.input)
+	else:
+		cap = cv2.VideoCapture(0)
 	if not os.path.isdir("./temp"):
 		os.mkdir("./temp")
 	if not os.path.exists(lp_filename):

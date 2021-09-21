@@ -1,3 +1,4 @@
+from centroidtracker import CentroidTracker
 import argparse
 import os
 import glob
@@ -9,7 +10,6 @@ import darknet
 import pytesseract
 import json
 import atexit
-from centroidtracker import CentroidTracker
 
 def parser():
 	parser = argparse.ArgumentParser(description="YOLO Object Detection")

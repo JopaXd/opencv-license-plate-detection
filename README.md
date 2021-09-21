@@ -8,6 +8,8 @@ This app detects and reads license plates in a video, then stores them in a file
 
 - If you don't get very good results, try changing the width and height in yolov3-custom.cfg to a higher resolution (width and heigt MUST be equal, the default resolution is 416x416, but i use 800x800 in this project).
 
+- Works ONLY with Python 3.8 or above!
+
 # Useful Links:
 
 - https://github.com/AlexeyAB/darknet

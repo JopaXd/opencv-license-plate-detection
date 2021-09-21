@@ -1,6 +1,6 @@
 # opencv-license-plate-detection
 
-This app detects and reads license plate, then stores them in a file.
+This app detects and reads license plates in a video, then stores them in a file.
 
 # Things to keep in mind:
 
@@ -12,3 +12,5 @@ This app detects and reads license plate, then stores them in a file.
 
 - https://github.com/AlexeyAB/darknet
 - https://www.youtube.com/watch?v=zJDUhGL26iU
+- https://gist.github.com/adioshun/779738c3e28151ffbb9dc7d2b13c2c0a
+- https://www.pyimagesearch.com/2018/08/13/opencv-people-counter/

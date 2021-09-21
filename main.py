@@ -9,6 +9,7 @@ import darknet
 import pytesseract
 import json
 import atexit
+from centroidtracker import CentroidTracker
 
 def parser():
 	parser = argparse.ArgumentParser(description="YOLO Object Detection")
@@ -198,6 +199,13 @@ def main():
 		batch_size=args.batch_size
 	)
 
+	#Centroid tracking allows us to detect and track objects.
+	#The tracking algorithm assigns a unique id to every object detected by darknet.
+	#This way i don't read the license plate of a car on every frame.
+	#Instead the car is detected once, and with help of tracking i can check if i already OCR'd its license plate or not.
+	license_plate_ids = []
+	ct = CentroidTracker()
+
 	lp_filename = "license_plates.json"
 	cap = cv2.VideoCapture(args.input)
 	if not os.path.isdir("./temp"):
@@ -212,29 +220,38 @@ def main():
 		cv2.imwrite("./temp/temp_img.png", frame)
 		image, detections = image_detection("./temp/temp_img.png", network, class_names, class_colors, args.thresh)
 		darknet.print_detections(detections, args.ext_output)
+		rects = []
 		for d in detections:
-			bbox = d[2]
-			(xmin,ymin,xmax,ymax) = darknet.bbox2points(bbox)
-			ROI = image[ymin:ymax, xmin:xmax]
-			try:
-				gray = cv2.cvtColor(ROI, cv2.COLOR_BGR2GRAY)
-			except cv2.error:
-				#Without the try/except, sometimes i get
-				#error: (-215:Assertion failed) !_src.empty() in function 'cvtColor'
-				#Adding this makes sure the script does not crash.
-				#Works very well.
-				continue
-			a_threshold = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 85, 11)
-			if (ocr_result := pytesseract.image_to_string(a_threshold).strip()) != "":
-				print("OCR: " + ocr_result)
-				with open(lp_filename, "r") as lic:
-					license_data = json.load(lic)
-				lic.close()
-				if not ocr_result in license_data["license_plates"]:
-					license_data["license_plates"].append(ocr_result)
-					with open(lp_filename, "w") as lic:
-						json.dump(license_data, lic)
+			#Check the confidence, if greater than 80, means its more likely for the OCR
+			#To read the license plate properly.
+			if float(d[1]) > 80:
+				bbox = tuple([int(x) for x in d[2]])
+				rects.append(bbox)
+		objects = ct.update(rects)
+		for (objectID, centroid) in objects.items():
+			if not objectID in license_plate_ids:
+				(xmin,ymin,xmax,ymax) = darknet.bbox2points(bbox)
+				ROI = image[ymin:ymax, xmin:xmax]
+				try:
+					gray = cv2.cvtColor(ROI, cv2.COLOR_BGR2GRAY)
+				except cv2.error:
+					#Without the try/except, sometimes i get
+					#error: (-215:Assertion failed) !_src.empty() in function 'cvtColor'
+					#Adding this makes sure the script does not crash.
+					#Works very well.
+					continue
+				a_threshold = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 85, 11)
+				if (ocr_result := pytesseract.image_to_string(a_threshold).strip()) != "":
+					print("OCR: " + ocr_result)
+					with open(lp_filename, "r") as lic:
+						license_data = json.load(lic)
 					lic.close()
+					if not ocr_result in license_data["license_plates"]:
+						license_plate_ids.append(objectID)
+						license_data["license_plates"].append(ocr_result)
+						with open(lp_filename, "w") as lic:
+							json.dump(license_data, lic)
+						lic.close()
 		cv2.imshow("Frame", image)
 		if cv2.waitKey(1) & 0xFF == ord('q'):
 			break
